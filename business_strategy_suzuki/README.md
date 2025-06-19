@@ -12,4 +12,4 @@ An in-depth analysis of why Suzuki maintains a relatively high Price-to-Book Rat
 - Five Forces + 1
 
 ###  Full Report (in Japanese)
-[📄 View PDF](./5123017x_桑原周平_経営学入門期末レポート.pdf)
+[📄 View PDF](./suzuki_report.pdf)
