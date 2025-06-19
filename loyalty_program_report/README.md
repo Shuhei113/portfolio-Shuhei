@@ -1,6 +1,6 @@
 # Research Design Report – Loyalty Program Effects on Consumer Spending
 
-This report was written for a Causal Inference course in the Social Data Science program at Hitotsubashi University during my third year.
+This report was written for a Causal Inference course in the Social Data Science program at Hitotsubashi University during my third year(Grade:A+).
 
 ###  Full Report (in Japanese)
 [View PDF](research_design.pdf)
