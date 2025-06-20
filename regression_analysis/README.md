@@ -3,7 +3,7 @@
 This report was completed for the Regression Analysis I course in the second year of the Social Data Science program at Hitotsubashi University.  
 Grade: A+
 
-### 📄 Full R Script
+###  Full R Script
 [View R Script](gdp_regression.R)
 
 ###  Topic
