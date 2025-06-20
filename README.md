@@ -7,5 +7,5 @@ This page showcases selected coursework and independent projects I have worked o
 ##  Selected Projects
 
 -  [Business Strategy Report – Suzuki Motor Corporation](./business_strategy_suzuki)
--  [GDP Regression Analysis (Multivariate)](./gdp_regression_report)
+-  [GDP Regression Analysis (Multivariate)](./regression_analysis)
 -  [Loyalty Program Effects on Spending](./loyalty_program_report)
