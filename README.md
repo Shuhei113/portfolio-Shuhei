@@ -10,3 +10,4 @@ This page showcases selected coursework and independent projects I have worked o
 -  [GDP Regression Analysis (Multivariate)](./regression_analysis)
 -  [Loyalty Program Effects on Spending](./loyalty_program_report)
 -  [Online Retail Database Project (SQL Schema & Queries)](./database_report)
+- [Data Visualisation Projects (Individual and Group)](./data_visualisation)
