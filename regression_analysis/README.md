@@ -4,7 +4,7 @@ This report was completed for the Regression Analysis I course in the second yea
 Grade: A+
 
 ###  Full R Script
-[View R Script](gdp_regression.R)
+[View R Script](regression_analysis_GDP.R)
 
 ###  Topic
 A multivariate regression analysis to explore how various national-level socioeconomic and environmental factors affect GDP per capita, using data from 2021 (or 2020 when 2021 data were unavailable).
