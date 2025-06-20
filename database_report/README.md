@@ -1,6 +1,6 @@
 # Database Project – Online Retail (Normalized Schema and SQL Queries)
 
-This project was submitted as a final assignment for the Database course at Hitotsubashi University.  
+This project was submitted as a final assignment for the Database course at Hitotsubashi University(Grade:A).  
 It demonstrates normalization, relational schema design, and SQL-based analysis using a real-world dataset.
 
 ###  Final Report (in Japanese)
