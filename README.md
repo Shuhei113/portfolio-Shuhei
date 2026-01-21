@@ -12,4 +12,4 @@ This page showcases selected coursework and independent projects I have worked o
 -  [Online Retail Database Project (SQL Schema & Queries)](./database_report)
 - [Data Visualisation Projects (Individual and Group)](./data_visualisation)
 
-##  留学日記
+
