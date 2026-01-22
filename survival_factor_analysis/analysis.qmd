@@ -1,0 +1,536 @@
+---
+title: "Survival Analysis and Factor Analysis"
+author: "Shuhei Kuwabara"
+format: html
+self-contained: true
+toc: true
+toc-location: left
+code-fold: show
+code-copy: true
+editor:
+  render-on-save: true
+  preview: true
+---
+
+# Part1. Survival Analysis
+## 1. Preparation for Subsequent Analyses
+### 1.1 Loading the Dataset
+
+The workspace is initialized by clearing all existing objects to ensure a reproducible environment. Subsequently, the dataset (`chapter_09_churn_data.csv`) is loaded from the `data/` directory. The `head()` outcome verifies that the data structure has been imported correctly.
+
+```{r setup, warning=FALSE, message=FALSE}
+rm(list = ls())
+
+data_chap09_churn <- read.csv("data/chapter_09_churn_data.csv", header = TRUE)
+
+head(data_chap09_churn)
+```
+
+
+### 1.2 Loading Required Packages
+
+```{r warning=FALSE, message=FALSE}
+#install.packages(c("survival", "flexsurv", "survminer","dplyr","stargazer","broom","readr"))
+library(survival)    
+library(flexsurv)
+library(survminer)  
+library(dplyr)       
+library(stargazer)
+library(broom)      
+library(readr)      
+```
+
+
+## 2. Effect of Direct Mail (PHM)
+
+### 2.1 Exploratory Data Analysis
+
+Prior to utilizing the proportional hazards model to estimate the differences in churn duration based on DM status, a preliminary analysis is performed.
+
+```{r warning=FALSE, message=FALSE}
+nrow(subset(data_chap09_churn, Event == 0))
+
+summary(data_chap09_churn[data_chap09_churn$Event == 1,]$Duration)
+
+hist(data_chap09_churn$Duration, main = '',
+     xlab = "Duration", ylab = "Number of Customers")
+
+dur_DM <- data_chap09_churn[data_chap09_churn$DM == 1,2]
+dur_no_DM <- data_chap09_churn[data_chap09_churn$DM == 0,2]
+
+boxplot(dur_DM,dur_no_DM,
+        names = c("DM", "No DM"), ylab = "Duration")
+```
+
+The `summary` statistics reveal that **23** customers remained active throughout the observation period. Out of the total **1,000** customers, **977** churn events were observed, ranging from day **3** to day **54**. The median survival time was identified as **31** days, indicating a concentration of customer attrition around this point.
+
+Furthermore, the data was stratified by Direct Mail (DM) reception status to visualize the distribution via a boxplot. The analysis indicates that the group receiving DM exhibits **slightly higher** median and quartile values compared to the non-recipient group. This observation suggests that *receiving DM may be associated with prolonged customer retention*.
+
+
+### 2.2 Estimation of the Proportional Hazards Model
+
+The **Cox proportional hazards model (PHM)** is utilized to quantify the relationship between the reception of Direct Mail (DM) and customer churn duration.
+
+```{r warning=FALSE, message=FALSE}
+fit_DM <- flexsurvreg(
+  Surv(Duration, Event) ~ DM,
+  data = data_chap09_churn,
+  dist = "weibullPH"
+)
+
+coef_tbl_DM <- as.data.frame(fit_DM$res) %>%
+  tibble::rownames_to_column("variable") %>%
+  filter(variable %in% names(coef(fit_DM)))
+
+coef_tbl_DM <- coef_tbl_DM %>%
+  mutate(
+    HR = exp(est),
+    HR_se = HR*se,
+    HR_L95 = exp(est - 1.96 * se),
+    HR_U95 = exp(est + 1.96 * se)
+  ) %>%
+  select(variable, coef = est, se.coef=se, HR, HR_se, HR_L95, HR_U95)
+print(coef_tbl_DM, digits = 3)
+```
+
+The results indicate that the Hazard Ratio for DM recipients is **0.821** (95% CI: **0.724**–**0.931**). Since the 95% confidence interval excludes 1, a statistically significant effect is observed. This estimate implies that the instantaneous risk of churn for customers who received DM is approximately **18%** lower than for those who did not, assuming other conditions remain constant.
+
+
+```{r warning=FALSE, message=FALSE}
+
+plot(fit_DM, type = "hazard", ci = TRUE,
+     newdata = data.frame(DM = 1),
+     col = "blue", lwd = 2,
+     xlab = "Duration", ylab = "Hazard",
+     main = "")
+
+plot(fit_DM, type = "hazard", ci = TRUE,
+     newdata = data.frame(DM = 0),
+     col = "red", lwd = 2, add = TRUE)
+legend("topleft", legend = c("DM", "no DM"),
+       col = c("blue", "red"), lwd = 2)
+```
+
+The figure above illustrates the estimated hazard functions stratified by the status of DM reception. The hazard for customers who received DM is observed to be consistently lower than that for customers who did not receive DM across the entire timeline.
+
+Notably, the divergence between the two groups widens progressively during the latter half of the observation period (after day 30). This trend suggests that the receipt of DM exerts a suppressive effect on the risk of churn. Furthermore, the distinct separation of the 95% confidence intervals indicates that the difference between the two hazard functions is statistically significant.
+
+
+```{r warning=FALSE, message=FALSE}
+
+plot(fit_DM, type = "survival", ci = TRUE,
+     newdata = data.frame(DM = 1), col = "blue")
+plot(fit_DM, type = "survival", ci = TRUE,
+     newdata = data.frame(DM = 0), col = "red", add = TRUE)
+
+legend("bottomleft", c("DM", "No DM"), lwd = 1, col = c("blue","red"))
+
+```
+
+This figure depicts the estimated survival functions stratified by the presence or absence of DM reception. The survival probability for DM recipients remains consistently higher than that for non-recipients, indicating that customers who received DM exhibit a stronger tendency for prolonged service retention.
+
+A marked divergence between the two groups becomes particularly apparent around the 30 to 40-day interval, suggesting that DM reception contributes to the mitigation of customer churn. Furthermore, the limited overlap between the 95% confidence intervals supports the conclusion that the observed difference in survival probabilities is statistically significant.
+
+## 3. Demographic and Behavioral Characteristics PHM
+In the following code, a proportional hazards model based on the Weibull distribution is estimated, utilizing customer demographic attributes (`Sex`, `Age`) and behavioral characteristics (`Freq`, `Amount`) as explanatory variables. Subsequent to the model estimation, the influence of varying levels of variables that exhibited particularly significant hazard ratios on the survival and hazard functions is visualized.
+
+```{r warning=FALSE, message=FALSE}
+fit_full <- flexsurvreg(
+  Surv(Duration, Event) ~  Sex + Age + Freq + Amount,
+  data = data_chap09_churn,
+  dist = "weibullPH"
+)
+
+coef_tbl_full <- as.data.frame(fit_full$res) %>%
+  tibble::rownames_to_column("variable") %>%
+  filter(variable %in% names(coef(fit_full)))
+coef_tbl_full <- coef_tbl_full %>%
+  mutate(
+    HR = exp(est),
+    HR_se = HR*se,
+    HR_L95 = exp(est - 1.96 * se),
+    HR_U95 = exp(est + 1.96 * se)
+  ) %>%
+  select(variable, coef = est, se.coef=se, HR, HR_se, HR_L95, HR_U95)
+print(coef_tbl_full, digits = 3)
+```
+
+Both age(`Age`) and purchase frequency(`Freq`) were identified as statistically significant factors influencing churn risk. Specifically, the Hazard Ratio (HR) for `Age` was estimated at **0.976** (95% CI: **0.972**–**0.980**), implying that each additional year of age corresponds to an approximate **2.4% reduction** in the instantaneous risk of churn. Similarly, the HR for `Freq` was calculated as **0.857** (95% CI: **0.814**–**0.903**), indicating that a single unit increase in purchase frequency is associated with a **14.3% decrease** in churn risk. Since the 95% confidence intervals for both variables exclude the null value of 1, these effects are confirmed to be statistically significant. Conversely, the HR for gender(`Sex`) was **0.951** (95% CI: **0.833–1.085**), and for purchase amount(`Amount`) was **0.917** (95% CI: **0.733**–**1.147**). As these intervals encompass 1, no statistically significant impact was observed for these variables, suggesting that their influence on customer churn is limited within the context of this model.
+
+
+```{r warning=FALSE, message=FALSE}
+plot(fit_full, type = "survival", ci = TRUE,
+     newdata = data.frame(Sex = mean(data_chap09_churn$Sex),
+                          Age = 20,
+                          Freq = mean(data_chap09_churn$Freq),
+                          Amount = mean(data_chap09_churn$Amount)),
+     col = "blue", lwd = 2,
+     xlab = "Duration", ylab = "Survival Probability",
+     main = "Survival Function (age)")
+
+plot(fit_full, type = "survival", ci = TRUE,
+     newdata = data.frame(Sex = mean(data_chap09_churn$Sex),
+                          Age = 40,
+                          Freq = mean(data_chap09_churn$Freq),
+                          Amount = mean(data_chap09_churn$Amount)),
+     col = "red", lwd = 2, add = TRUE)
+
+legend("bottomleft", legend = c("age:20", "age:40"), 
+       col = c("blue", "red"), lwd = 2)
+```
+
+
+
+```{r warning=FALSE, message=FALSE}
+plot(fit_full, type = "hazard", ci = TRUE,
+     newdata = data.frame(Sex = mean(data_chap09_churn$Sex),
+                          Age = 20,
+                          Freq = mean(data_chap09_churn$Freq),
+                          Amount = mean(data_chap09_churn$Amount)),
+     col = "blue", lwd = 2,
+     xlab = "Duration", ylab = "Hazard",
+     main = "Hazard Function (age)")
+
+plot(fit_full, type = "hazard", ci = TRUE,
+     newdata = data.frame(Sex = mean(data_chap09_churn$Sex),
+                          Age = 40,
+                          Freq = mean(data_chap09_churn$Freq),
+                          Amount = mean(data_chap09_churn$Amount)),
+     col = "red", lwd = 2, add = TRUE)
+
+legend("bottomright", legend = c("age:20", "age:40"), 
+       col = c("blue", "red"), lwd = 2)
+```
+
+These graphs illustrate the estimated survival functions and the hazard functions for customers aged **20** (representing the younger demographic) and **40** (representing the middle-aged demographic). A comparative analysis of these indicates that the younger demographic exhibits a consistently higher risk of churn and a correspondingly lower survival probability at any given time point.
+
+Notably, the divergence between the two cohorts expands during the latter half of the observation period, providing visual confirmation that the tendency for customer attrition becomes more moderate as age increases. This observation is fully consistent with the estimated Hazard Ratio (HR = **0.976**, 95% CI: **0.972**–**0.980**), thereby corroborating the conclusion that advancing age serves as a significant factor in suppressing churn risk.
+
+
+```{r warning=FALSE, message=FALSE}
+colors <- c("red", "orange", "green", "blue", "purple")
+labels <- paste("Freq =", 1:5)
+
+plot(fit_full, type = "hazard", ci = FALSE,
+     newdata = data.frame(Sex = mean(data_chap09_churn$Sex),
+                          Age = mean(data_chap09_churn$Age),
+                          Freq = 1,
+                          Amount = mean(data_chap09_churn$Amount)),
+     col = colors[1], lwd = 2,
+     xlab = "Duration", ylab = "Hazard",
+     main = "Hazard Function (Freq)")
+for (i in 2:5) {
+  plot(fit_full, type = "hazard", ci = FALSE,
+       newdata = data.frame(Sex = mean(data_chap09_churn$Sex),
+                            Age = mean(data_chap09_churn$Age),
+                            Freq = i,
+                            Amount = mean(data_chap09_churn$Amount)),
+       col = colors[i], lwd = 2, add = TRUE)
+}
+
+legend("bottomright", legend = labels, col = colors, lwd = 2)
+```
+
+```{r warning=FALSE, message=FALSE}
+plot(fit_full, type = "survival", ci = FALSE,
+     newdata = data.frame(Sex = mean(data_chap09_churn$Sex),
+                          Age = mean(data_chap09_churn$Age),
+                          Freq = 1,
+                          Amount = mean(data_chap09_churn$Amount)),
+     col = colors[1], lwd = 2,
+     xlab = "Duration", ylab = "Survival Probability",
+     main = "Survival Function (Freq)")
+for (i in 2:5) {
+  plot(fit_full, type = "survival", ci = FALSE,
+       newdata = data.frame(Sex = mean(data_chap09_churn$Sex),
+                            Age = mean(data_chap09_churn$Age),
+                            Freq = i,
+                            Amount = mean(data_chap09_churn$Amount)),
+       col = colors[i], lwd = 2, add = TRUE)
+}
+legend("bottomleft", legend = labels, col = colors, lwd = 2)
+```
+
+The figures above visualize the hazard and survival functions for customers with usage frequencies(`Freq`) ranging from 1 to 5. A comparative analysis of the survival functions reveals that customers with higher usage frequencies maintain consistently higher survival probabilities, indicating a tendency for prolonged service retention.
+
+Similarly, the hazard functions demonstrate that groups with higher frequencies experience lower churn hazards at any arbitrary time point, evidencing a suppressive effect on churn risk. This observation aligns with the previously estimated hazard ratios, suggesting that usage frequency serves as a proxy for customer loyalty and acts as a significant determinant in mitigating customer attrition.
+
+
+
+# Part2. Factor Analysis
+
+## 1. Preparation for Subsequent Analyses
+### 1.1 Loading the Dataset
+
+The dataset (`chapter_11.csv`) is loaded from the `data/` directory. The `head()` outcome verifies that the data structure has been imported correctly.
+
+```{r warning=FALSE, message=FALSE}
+rm(list = ls())　
+
+data_chap11 <- read.csv("data/chapter_11.csv", header = TRUE)
+head(data_chap11)
+```
+
+### 1.2 Loading Required Packages
+```{r warning=FALSE, message=FALSE}
+#install.packages(c("lavaan", "lavaanPlot", "psych", "dplyr", "semTools"))
+
+library(lavaan) 
+library(lavaanPlot)
+library(psych)
+library(dplyr)
+library(semTools)
+```
+
+### 1.3 Calculation Methods for Reliability and Validity Metrics
+
+To facilitate the subsequent computation of **Cronbach's alpha**, Composite Reliability (**CR**), and Average Variance Extracted (**AVE**), the necessary functions are defined in advance.
+
+```{r warning=FALSE, message=FALSE}
+alpha.coef <- function(x){
+  z <- (ncol(x) / (ncol(x) - 1)) * 
+    (1 - sum(diag(var(x))) / var(rowSums(x)))
+  return(z)
+}
+
+cr_ave <- function(Flab, StdEst){
+  FL <- StdEst[(StdEst["lhs"] == Flab) & (StdEst["op"] == "=~"),3]　
+  FLlist <- colSums(apply(StdEst["rhs"], 1, 
+                          function(x,fl){x==fl},FL)) > 0
+  Lm <- StdEst[FLlist & (StdEst["op"] == "=~"), 4]
+  e <-  StdEst[FLlist & (StdEst["op"] == "~~"), 4]
+  
+  CR <- sum(Lm)^2 / (sum(Lm)^2 + sum(e))
+  AVE <- sum(Lm^2) / (sum(Lm^2) + sum(e))
+  return(c(CR,AVE))
+}
+```
+
+## 2. Confirmatory Factor Analysis (One-Factor Model)
+
+### 2.1 One-Factor CFA
+
+A Confirmatory Factor Analysis (CFA) is conducted on a total of eight items, ranging from `LUAT1` to `LUBE5`, under the assumption that these variables are explained by a **single** latent factor, `LU`. The dataset `dat_lu` is constructed by extracting the target items (columns 10 through 17) from data_chap11. Estimation was performed utilizing the sem function from the lavaan package. Subsequently, model fit indices are generated using `fitMeasures`, and detailed parameter estimates were obtained via the `summary` function. Finally, the analysis proceeded to the visualization of results and the evaluation of both reliability and convergent validity.
+
+```{r warning=FALSE, message=FALSE}
+dat_lu <- data_chap11[,10:17]　
+
+cor(dat_lu)
+plot(eigen(cor(dat_lu))$values, type = "b")
+abline(h = 1)
+```
+
+::: {.callout-note}
+
+## Factor Determination
+The scree plot indicates that the first two eigenvalues exceed 1.0, suggesting that a **two-factor structure** might be statistically more appropriate for this dataset. However, as the assignment explicitly requires the implementation of a one-factor model, the following analysis proceeds under the assumption of a single latent factor.
+
+:::
+
+
+```{r warning=FALSE, message=FALSE}
+model_cfa_1F <- '
+  LU =~ LUAT1 + LUAT2 + LUAT3 +
+       LUBE1 + LUBE2 + LUBE3 + LUBE4 + LUBE5
+'
+result_cfa_1F <- lavaan::sem(model_cfa_1F, data = dat_lu)
+fitMeasures(result_cfa_1F)
+```
+
+An examination of the model fit indices reveals that both `GFI` (0.734) and `AGFI` (0.521) fall below their respective recommended thresholds of 0.90 and 0.85, indicating that the overall model fit is inadequate. Furthermore, error metrics such as `RMSEA` (0.243) and `SRMR` (0.130) also fail to meet the established criteria. Consequently, it is concluded that the one-factor model does **not** demonstrate a satisfactory fit to the data, suggesting that a re-examination of the model structure is necessary.
+
+```{r warning=FALSE, message=FALSE}
+summary(result_cfa_1F, standardized = TRUE)
+```
+
+While factor `LU` demonstrates strong associations with certain observed variables, notably `LUBE1` (0.881) and `LUBE2` (0.894), it exhibits weaker associations with others, such as `LUBE4` (0.451) and `LUAT2` (0.528). Furthermore, all three items in the `LUAT` series display moderate factor loadings of approximately 0.5, necessitating a cautious interpretation regarding measurement validity. Overall, the analysis reveals a notable disparity in the contribution of individual items to the underlying factor structure.
+
+
+```{r warning=FALSE, message=FALSE}
+fit_1F <- cfa(model_cfa_1F, data = dat_lu)
+lavaanPlot(model = fit_1F,
+           edge_options = list(color = "grey20"),
+           coefs = T, covs = T, stand = TRUE)
+```
+
+The figure above presents the path diagram of the one-factor CFA model, where `LU` serves as the single latent factor. In this structure, all eight items comprising the LUAT and LUBE series are modeled as being explained by factor loadings deriving from LU. The values annotating each arrow denote the standardized factor loadings (`Std.all`). Visual inspection confirms that while items such as LUBE1 and LUBE2 exhibit high loadings, the loading for LUBE4 is relatively low in comparison.
+
+
+```{r warning=FALSE, message=FALSE}
+alpha.coef(dat_lu)
+```
+
+```{r warning=FALSE, message=FALSE}
+standardizedSolution(result_cfa_1F)
+```
+
+```{r warning=FALSE, message=FALSE}
+std_est_1F <- standardizedSolution(result_cfa_1F)
+cr_ave("LU", std_est_1F)
+```
+
+**Cronbach’s alpha** coefficient was **0.869**, significantly exceeding the generally accepted reliability threshold of 0.70; thus, the internal consistency among items is determined to be sufficiently high. Similarly, **Composite Reliability (CR)** was **0.859**, also surpassing the benchmark of 0.70, which demonstrates that the observed variables are stably explained by the common latent factor. Conversely, the **Average Variance Extracted (AVE)** was **0.447**, falling slightly below the standard cutoff of **0.50**. This result presents a concern regarding convergent validity, and it is possible that the low factor loading of `LUBE4` specifically contributed to this reduction in the AVE value.
+
+### 2.2 Two-Factor CFA
+
+For the purpose of comparison, a Confirmatory Factor Analysis was conducted under the assumption of a two-factor structure, following the exact same procedure.
+
+```{r warning=FALSE, message=FALSE}
+model_cfa_2F <- '
+  AT =~ LUAT1 + LUAT2 + LUAT3
+  BE =~ LUBE1 + LUBE2 + LUBE3 + LUBE4 + LUBE5
+'
+result_cfa_2F <- lavaan::sem(model_cfa_2F, data = dat_lu)
+fitMeasures(result_cfa_2F)
+```
+
+The goodness-of-fit indices for the two-factor model—`GFI` = 0.931 (≥ 0.90), `AGFI` = 0.869 (≥ 0.85), and `SRMR` = 0.066 (≤ 0.08)—satisfied the established criteria, indicating that the overall model fit is satisfactory. Conversely, the `RMSEA` value of 0.114 exceeded the recommended limit (≤ 0.1), which warrants caution. However, given that the other indices are generally favorable, this model is evaluated as exhibiting a **superior fit** compared to the one-factor model.
+
+
+```{r warning=FALSE, message=FALSE}
+summary(result_cfa_2F, standardized = TRUE)
+```
+
+Factor `AT` exhibited high factor loadings (ranging from approximately 0.80 to 0.85) for all three items (LUAT1–LUAT3), confirming a sufficient association. Regarding the `BE` factor, while LUBE1–LUBE3 displayed high factor loadings, the loading for `LUBE4` was marginally low at **0.451**. Similar to the one-factor model, this necessitates a cautious evaluation regarding validity. Conversely, `LUBE2` and `LUBE1` demonstrated extremely high factor loadings (**0.910** and **0.897**, respectively), suggesting they can be interpreted as the core observed variables constituting the `BE` factor.
+
+```{r warning=FALSE, message=FALSE}
+fit_2F <- cfa(model_cfa_2F, data = dat_lu)
+lavaanPlot(model = fit_2F,
+           edge_options = list(color = "grey20"),
+           coefs = T, covs = T, stand = TRUE)
+```
+
+This figure presents the path diagram of the measurement model in which two latent factors, `AT` and `BE`, correspond to the eight items in the `LUAT` and `LUBE` series. In this model, the three items LUAT1 through LUAT3 are mapped to the AT factor, while the five items LUBE1 through LUBE5 are mapped to the BE factor. The values on each arrow represent the standardized factor loadings (`Std.all`). For the `BE` factor, `LUBE1` (0.90), `LUBE2` (0.91), and `LUBE3` (0.76) exhibit **high** loadings, indicating that they represent BE well. Conversely, `LUBE4` shows a somewhat **low** loading of 0.45, suggesting a weak association with `BE`. `LUBE5` also shows a relatively lower loading of 0.57, though this is considered within the acceptable range.
+
+Regarding the `AT` factor, all three items (LUAT1–LUAT3) demonstrate **high** factor loadings exceeding 0.80, confirming that AT is measured as a consistent construct. Furthermore, a correlation of approximately **0.57** exists between `AT` and `BE`, visually demonstrating that the two factors share a moderate positive association.
+
+```{r warning=FALSE, message=FALSE}
+alpha.coef(dat_lu[,1:3])
+```
+
+```{r warning=FALSE, message=FALSE}
+alpha.coef(dat_lu[,4:8])
+
+```
+
+```{r warning=FALSE, message=FALSE}
+standardizedSolution(result_cfa_2F)
+```
+
+```{r warning=FALSE, message=FALSE}
+std_est_2F <- standardizedSolution(result_cfa_2F)
+cr_ave("AT", std_est_2F)
+```
+
+```{r warning=FALSE, message=FALSE}
+cr_ave("BE", std_est_2F)
+```
+
+For both latent factors `AT` and `BE`, **Cronbach's alpha** coefficients and **Composite Reliability (CR)** were high, at approximately 0.85, well exceeding the threshold (≥ 0.70). This demonstrates that the observed variables within each factor possess high internal consistency and stably measure the same construct.
+
+Regarding convergent validity, the **Average Variance Extracted (AVE)** was 0.682 for `AT` and 0.546 for `BE`, both surpassing the benchmark of 0.50. In particular, `AT` exhibited a notably high value of 0.682, indicating that the observed variables strongly reflect the latent factor. Similarly, the `AVE` for `BE` (0.546) met the criterion, suggesting that convergent validity is maintained.
+
+Based on these results, it can be concluded that both `AT` and `BE` in the two-factor model satisfy sufficient standards in terms of both reliability and validity.
+
+## 2.3 Comparison of Models
+
+Based on the results obtained, the one-factor and two-factor models are compared. First, as indicated in the previous sections, the two-factor model demonstrates a substantial improvement in goodness-of-fit indices. These comparisons are summarized in the table below.
+
+| Index | 1-Factor Model | 2-Factor Model | Criteria | Comments |
+| :--- | :---: | :---: | :---: | :--- |
+| **GFI** | 0.734 | **0.931** | $\ge$ 0.90 | Improved in 2-Factor |
+| **AGFI** | 0.521 | **0.869** | $\ge$ 0.85 | Improved in 2-Factor |
+| **RMSEA** | 0.243 | **0.114** | $\le$ 0.10 | High in both, but improved |
+| **SRMR** | 0.130 | **0.066** | $\le$ 0.08 | Clearly improved |
+
+Regarding factor loadings, the one-factor model exhibited some low values, particularly for `LUBE4` (0.451) and the `LUAT` items, indicating variation in the factor structure. In contrast, the two-factor model showed high factor loadings ($\ge$ 0.80) for `LUAT1`–`3` on the `AT` factor, and `LUBE1`–`3` were also strongly linked to `BE`. However, `LUBE4` remained somewhat low (0.451) even in the two-factor model, suggesting room for improvement.
+
+The comparison of reliability and validity metrics is presented in the following table.
+
+| Factor | Model | $\alpha$ | CR | AVE | Comments |
+| :--- | :---: | :---: | :---: | :---: | :--- |
+| **LU** | 1-Factor | 0.869 | 0.859 | 0.447 | AVE below threshold; concern for convergent validity |
+| **AT** | 2-Factor | 0.864 | 0.865 | 0.682 | All indices are good |
+| **BE** | 2-Factor | 0.849 | 0.850 | 0.546 | All indices within acceptable range |
+
+As indicated in the table above, both CR and AVE improved in the two-factor model. Notably, the AVE for the `AT` factor is very high at 0.682, reflecting an improvement in measurement precision.
+
+In conclusion, the two-factor model is evaluated as superior to the one-factor model across all dimensions: model fit indices, factor loading structure, reliability, and convergent validity. Specifically, structuring the `LUAT` series and `LUBE` series as separate factors (`AT` and `BE`) yields a more valid and interpretable measurement model.
+
+## 3. Confirmatory Factor Analysis with Two Factors Excluding LUBE4
+
+Following the same procedure as in the previous section, the model construction, estimation, assessment of goodness-of-fit indices, visualization of results, and evaluation of reliability and validity are conducted. Subsequently, a comparison with the original two-factor CFA and an interpretation of the results are performed.
+
+### 3.1 Two-Factor CFA Excluding LUBE4
+
+```{r warning=FALSE, message=FALSE}
+model_cfa_2F_trim <- '
+  AT =~ LUAT1 + LUAT2 + LUAT3
+  BE =~ LUBE1 + LUBE2 + LUBE3 + LUBE5   
+'
+
+result_cfa_2F_trim <- lavaan::sem(model_cfa_2F_trim, data = dat_lu)
+fitMeasures(result_cfa_2F_trim)
+```
+
+The model fit indices—`GFI` = 0.965 (≥ 0.90), `AGFI` = 0.924 (≥ 0.85), `RMSEA` = 0.086 (≤ 0.1), and `SRMR` = 0.06 (≤ 0.08)—all satisfy the established criteria. Consequently, it can be concluded that the overall model fit is excellent.
+
+
+```{r warning=FALSE, message=FALSE}
+summary(result_cfa_2F_trim, standardized = TRUE)
+```
+
+Factor `AT` exhibited high factor loadings (ranging from approximately 0.80 to 0.85) for all three items (`LUAT1`–`LUAT3`), confirming a sufficient association. Regarding the `BE` factor, while `LUBE1`–`LUBE3` displayed high factor loadings, the loading for LUBE5 was marginally low at 0.558. Similar to previous models, this necessitates a cautious evaluation regarding validity. However, regarding the other variables, even the lowest value observed was `LUBE3` (0.743), which maintains a favorable level; thus, the variables demonstrate a sufficient association with the two factors.
+
+```{r warning=FALSE, message=FALSE}
+fit_2F_trim <- cfa(model_cfa_2F_trim, data = dat_lu)
+lavaanPlot(model = fit_2F_trim,
+           edge_options = list(color = "grey20"),
+           coefs = T, covs = T, stand = TRUE)
+```
+
+This structure indicates that the three items `LUAT1`–`LUAT3` correspond to the `AT` factor, while the items from the `LUBE` series (`LUBE1`–`LUBE5`) correspond to the `BE` factor. Consistent with the original two-factor model, `LUBE1` (0.90), `LUBE2` (0.92), and `LUBE3` (0.74) exhibit high loadings on the `BE` factor, indicating that they represent the construct well. Conversely, `LUBE5` shows a somewhat lower loading of 0.56. Regarding the `AT` factor, all three items (`LUAT1`–`LUAT3`) demonstrate high factor loadings exceeding 0.80, confirming that `AT` is measured as a consistent construct. Furthermore, a correlation of approximately 0.57 exists between `AT` and `BE`, remaining similar to the original two-factor model.
+
+```{r warning=FALSE, message=FALSE}
+alpha.coef(dat_lu[,1:3])
+alpha.coef(dat_lu[, c("LUBE1", "LUBE2", "LUBE3", "LUBE5")])
+head(dat_lu)
+standardizedSolution(result_cfa_2F_trim)
+std_est_2F_trim <- standardizedSolution(result_cfa_2F_trim)
+cr_ave("AT", std_est_2F_trim)
+cr_ave("BE", std_est_2F_trim)
+```
+
+For both latent factors `AT` and `BE`, **Cronbach's alpha** coefficients and **Composite Reliability (CR)** were high, at approximately 0.85, well exceeding the threshold (≥ 0.70). This demonstrates that the observed variables within each factor possess high internal consistency and stably measure the same construct.
+
+Regarding convergent validity, the **Average Variance Extracted (AVE)** was 0.682 for `AT` and 0.546 for `BE`, both surpassing the benchmark of 0.50. In particular, `AT` exhibited a notably high value of 0.682, indicating that the observed variables strongly reflect the latent factor. Similarly, the **AVE** for `BE` (0.546) met the criterion, suggesting that convergent validity is maintained.
+
+Based on these results, it can be concluded that both `AT` and `BE` in the two-factor model satisfy sufficient standards in terms of both reliability and validity.
+
+
+
+### 3.2 Comparison of the Two-Factor Models
+
+Based on the results obtained, the two-factor models (with and without `LUBE4`) are compared. First, as indicated in the previous sections, the latter model demonstrates an improvement in goodness-of-fit indices. These comparisons are summarized in the table below.
+
+| Index | Original Model | Model w/o LUBE4 | Criteria | Comments |
+| :--- | :---: | :---: | :---: | :--- |
+| **GFI** | 0.931 | **0.965** | $\ge$ 0.90 | Improved by removing LUBE4 |
+| **AGFI** | 0.869 | **0.924** | $\ge$ 0.85 | Improved by removing LUBE4 |
+| **RMSEA** | 0.114 | **0.086** | $\le$ 0.10 | Clearly improved and cleared criteria |
+| **SRMR** | 0.066 | **0.060** | $\le$ 0.08 | Slightly improved |
+
+Regarding factor loadings, in the original model, `LUBE4` was the lowest (0.451), introducing variability to the factor structure. However, by removing this item, `LUBE5` became the lowest loading (0.558), while all other items maintained high values of 0.74 or above.
+
+The comparison of reliability and validity metrics is presented in the following table.
+
+| Factor | Model | $\alpha$ | CR | AVE | Comments |
+| :--- | :---: | :---: | :---: | :---: | :--- |
+| **AT** | Before Removal | 0.864 | 0.865 | 0.682 | All indices are favorable |
+| **BE** | Before Removal | 0.849 | 0.850 | 0.546 | All indices within acceptable range |
+| **AT** | After Removal | 0.864 | 0.865 | 0.682 | All indices are favorable |
+| **BE** | After Removal | 0.858 | 0.867 | 0.628 | All indices are favorable |
+
+As shown in the table above, in the model excluding `LUBE4`, the Average Variance Extracted (AVE) for the `BE` factor improved significantly, confirming an enhancement in measurement precision. Consequently, values satisfying the established criteria were obtained for all aspects: fit indices, factor loading structure, reliability metrics, and convergent validity.
+
+In conclusion, it is evaluated that a valid CFA model has been successfully constructed, which adequately explains the seven observed variables (excluding `LUBE4`) using two latent factors, `AT` and `BE`.
