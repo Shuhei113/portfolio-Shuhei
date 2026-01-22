@@ -3,7 +3,7 @@
 ## Overview
 This repository contains the **Final Report for the Marketing Science course**, completed during my third year at Hitotsubashi University. The project demonstrates advanced statistical modeling using R.
 
-* **View the Full Report (Web):** [👉 **Click Here to Open Report**](./index.html)
+* **View the Full Report (Web):** [👉 **Click Here to Open Report**](./report.html)
 * **Source Code:** [View R/Quarto Code](./analysis.qmd)
 * **Original Submission:** [Download PDF (Japanese)](./original-report.pdf)
 
