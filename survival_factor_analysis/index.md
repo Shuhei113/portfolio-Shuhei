@@ -5,7 +5,7 @@ This repository contains the **Final Report for the Marketing Science course**, 
 
 * **View the Full Report (Web):** [👉 **Click Here to Open Report**](./report.html)
 * **Source Code:** [View R/Quarto Code](./analysis.qmd)
-* **Original Submission:** [Download PDF (Japanese)](./original-report.pdf)
+* **Original Submission:** [Download PDF (Japanese)](./original_report.pdf)
 
 ---
 
