@@ -1,3 +1,11 @@
+---
+title: "Survival Analysis & Factor Analysis"
+description: "Predicting customer churn using Cox Proportional Hazards Model."
+date: "2026-01-23"
+categories: [R, Survival Analysis]
+format: html
+---
+
 # Marketing Science: Survival Analysis and Factor Analysis
 
 ## Overview
