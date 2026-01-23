@@ -5,5 +5,3 @@ Passionate about bridging advanced statistics and business strategy.
 
 ## Selected Projects
 
-::: {#portfolio-listing}
-:::
