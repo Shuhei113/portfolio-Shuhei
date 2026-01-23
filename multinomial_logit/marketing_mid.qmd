@@ -1,0 +1,146 @@
+---
+title: "Analysis of Consumer Brand Choice using Multinomial Logit and Latent Class Models"
+author: "Shuhei Kuwabara"
+format: html
+self-contained: true
+toc: true
+toc-location: left
+code-fold: show
+code-copy: true
+editor:
+  render-on-save: true
+  preview: true
+---
+
+## 1. Data Preparation
+### 1.1 Data Loading
+
+First, the dataset `chapter_06_choice.csv` is loaded from the data directory. The data  structure is then verified by displaying the first few rows.
+
+```{r warning=FALSE, message=FALSE}
+data_chap6_choice <- read.csv("data/chapter_06_choice.csv", header = TRUE)
+head(data_chap6_choice)
+```
+
+### 1.2 Package Installation
+
+The required packages are installed and loaded: `mlogit` for multinomial logit modeling and `flexmix` for latent class analysis.
+
+```{r warning=FALSE, message=FALSE}
+#install.packages("mlogit")
+#install.packages("flexmix", dependencies = TRUE)
+library(mlogit)
+library(flexmix)
+```
+
+## 2. Multinomial Logit Model Estimation
+### 2.1 Data Reshaping
+The original dataset, `data_chap6_choice`, is provided in a **wide** format. Consequently, it is reshaped into a **long** format suitable for analysis and stored as `cr_data`. In this process, `choice` is designated as the response variable, `Cid` as the customer ID, and columns 2 through 9 are identified as the explanatory variables.
+
+```{r warning=FALSE, message=FALSE}
+cr_data <- mlogit.data(data_chap6_choice,
+                       choice = "choice", id.var = "Cid",
+                       varying = 2:9, shape = "wide", sep = ".")
+cr_data
+```
+
+### 2.2 Multinomial Logit Model
+
+The selection frequency for each brand is calculated and tabulated. As `dannon` is identified as the brand with the highest share, it is designated as the reference level. The `table` function displays the selection counts for each brand, while `summary` presents the estimation results.
+
+```{r warning=FALSE, message=FALSE}
+table(cr_data$alt[cr_data$choice == TRUE])
+```
+
+```{r warning=FALSE, message=FALSE}
+result_logit <-　mlogit(choice ~ price + feat, 
+                       data = cr_data, reflevel = "dannon")
+summary(result_logit)
+```
+
+### 2.3 Interpretation 
+The `summary` results indicate that both `feat` and `price` significantly influence brand choice. The coefficient for `feat` is positive at approximately **0.49**, suggesting that the presence of an advertisement increases the probability of selection. In contrast, the `price` coefficient is negative at approximately **-0.37**, indicating that higher prices reduce the likelihood of a brand being chosen. Furthermore, the intercept values reveal that when marketing variables are held constant, the order of consumer preference is Yoplait, Dannon, Hiland, and then Weight.
+
+## 3. Latent Class Logit Model 
+### 3.1 Determining the Number of Classes
+
+First, the optimal number of classes is determined using the **Bayesian Information Criterion (BIC)** by estimating models with the number of classes varying from 1 to 6.
+
+```{r warning=FALSE, message=FALSE}
+cr_data$id <- cr_data$Cid
+
+set.seed(123)
+result_lc1 <- flexmix(choice ~ feat + price + alt | id,
+                      model = FLXMRcondlogit(strata =~ chid),
+                      data = cr_data, k = 1)
+
+set.seed(123)
+result_lc2 <- flexmix(choice ~ feat + price + alt | id,
+                      model = FLXMRcondlogit(strata =~ chid),
+                      data = cr_data, k = 2)
+
+set.seed(123)
+result_lc3 <- flexmix(choice ~ feat + price + alt | id,
+                      model = FLXMRcondlogit(strata =~ chid),
+                      data = cr_data, k = 3)
+
+set.seed(123)
+result_lc4 <- flexmix(choice ~ feat + price + alt | id,
+                      model = FLXMRcondlogit(strata =~ chid),
+                      data = cr_data, k = 4)
+
+set.seed(123)
+result_lc5 <- flexmix(choice ~ feat + price + alt | id,
+                      model = FLXMRcondlogit(strata =~ chid),
+                      data = cr_data, k = 5)
+
+set.seed(123)
+result_lc6 <- flexmix(choice ~ feat + price + alt | id,
+                      model = FLXMRcondlogit(strata =~ chid),
+                      data = cr_data, k = 6)
+
+BIC(result_lc1, result_lc2, result_lc3, result_lc4, result_lc5, result_lc6)
+```
+
+The `BIC` results indicated that the value decreased as the number of segments increased. However, since a larger number of segments risks complicating the interpretation, the **four-class** model was selected for the subsequent analysis (noting that the reduction in BIC became marginal for k=4 to 5 and 5 to 6).
+
+### 3.2 The Latent Class Logit Model with Four Segments
+
+```{r warning=FALSE, message=FALSE}
+result_refit_lc4 <- refit(result_lc4)
+summary(result_refit_lc4)
+```
+
+### 3.3 Interpretation
+
+The `summary` results indicate that the price coefficients are significantly negative across all segments, confirming that higher prices reduce the likelihood of brand selection. Price sensitivity is highest in **Segment 4**, followed by Segments 1, 3, and 2. Regarding the impact of `feat`, an evaluation based on both the magnitude and significance of the coefficients reveals that the effect is strongest in Segment 2, followed by Segments 1, 3, and 4. Notably, while the coefficient for Segment 4 is negative, it is not statistically significant (**p=0.61**), suggesting that this segment is largely unresponsive to advertising.
+
+## 4. Segment Membership Probabilities
+
+```{r warning=FALSE, message=FALSE}
+result_lc4a <- flexmix(choice ~ feat + price + alt | id,
+                       model = FLXMRcondlogit(strata =~ chid),
+                       concomitant = FLXPmultinom(~ sex + age + married),
+                       data = cr_data, k = 4)
+
+parameters(result_lc4a)
+```
+
+
+```{r warning=FALSE, message=FALSE}
+result_refit_lc4a <- refit(result_lc4a)
+summary(result_refit_lc4a, which = "concomitant")
+```
+
+
+```{r warning=FALSE, message=FALSE}
+plot(result_refit_lc4a, xlim = c(-6, 6))
+```
+
+The `summary` results indicate that for Segment 2, the coefficient for age is significantly negative (**p=0.038**), suggesting that **younger individuals** are more likely to belong to this segment compared to Segment 1. Additionally, the coefficient for marital status is positive and marginally significant at the 10% level (**p=0.057**), implying that **married individuals** are more likely to belong to this segment relative to Segment 1.
+
+In contrast, for Segments 3 and 4, few coefficients fall below the 5% significance level (with the exception of marital status in Segment 4), indicating that the influence of demographic variables on segment membership is not distinct. This suggests that the impact of age, gender, and marital status is likely limited.
+
+Based on these findings, while **Segment 2** can be characterized as a group with a relatively higher proportion of **younger and married** individuals, it is difficult to establish clear demographic profiles for the other segments.
+
+
