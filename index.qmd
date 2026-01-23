@@ -10,12 +10,14 @@ about:
     - icon: linkedin
       text: LinkedIn
       href: https://www.linkedin.com/in/Shuhei113
+
 listing:
   id: portfolio-listing
   contents: 
-    - multinomial_logit/*.qmd           
-    - survival_factor_analysis/*.qmd
-  type: grid         
+    # ↓ 「フォルダの中の README.md をカードにしてね」と指定
+    - multinomial_logit/README.md
+    - survival_factor_analysis/README.md
+  type: grid
   sort: "date desc"
   categories: true
   fields: [image, date, title, description]
