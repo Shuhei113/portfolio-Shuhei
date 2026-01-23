@@ -1,6 +1,6 @@
 ---
 title: "Data Science Portfolio"
-image: images/profile.jpg  # プロフィール画像がなければこの行を削除
+image: images/profile.jpg 
 about:
   template: jolla
   links:
@@ -13,10 +13,9 @@ about:
 listing:
   id: portfolio-listing
   contents: 
-    # ↓ フォルダ構成に合わせてパスを指定します
     - multinomial_logit/*.qmd           
     - survival_factor_analysis/*.qmd
-  type: grid          # ここでカード型に指定
+  type: grid         
   sort: "date desc"
   categories: true
   fields: [image, date, title, description]
