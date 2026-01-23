@@ -1,16 +1,3 @@
----
-title: "Portfolio"
-listing:
-  contents: 
-    - path/to/marketing_mid.qmd # プロジェクトのパスを指定
-    - path/to/marketing_final.qmd
-  type: grid           
-  sort: "date desc"    
-  categories: true     
-  fields: [image, title, description, categories]
-page-layout: full
-title-block-banner: true 
----
 
 # research projects 
 
