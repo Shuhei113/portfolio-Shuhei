@@ -31,8 +31,8 @@ This analysis was originally conducted as a mid-term project for the **Marketing
 ### 📂 Repository Structure (Click to View)
 | File | Description |
 | :--- | :--- |
-| **[marketing_mid.html](./marketing_mid.html)** | 📊 **[Recommended]** The full analysis report rendered in HTML. View this for the complete narrative and visualizations. |
-| **[marketing_mid.qmd](./marketing_mid.qmd)** | 📝 The Quarto source code. Contains all R code for data loading, cleaning, and modeling to ensure reproducibility. |
+| **[marketing_mid.html](./report.html)** | 📊 **[Recommended]** The full analysis report rendered in HTML. View this for the complete narrative and visualizations. |
+| **[marketing_mid.qmd](./report.qmd)** | 📝 The Quarto source code. Contains all R code for data loading, cleaning, and modeling to ensure reproducibility. |
 | **[original.pdf](./original.pdf)** | 🇯🇵 The original project report submitted in Japanese (Mid-term assignment). |
 | **[data/](./data/)** | 📁 Directory containing the raw dataset (`chapter_06_choice.csv`). |
 
