@@ -1,18 +1,19 @@
 ---
 title: "Data Science Portfolio"
-image: images/profile.jpg 
+image: images/profile.jpg
 about:
-  template: jolla       
+  template: jolla
   links:
     - icon: github
       text: Github
-      href: https://github.com/[Shuhei113]
+      href: https://github.com/Shuhei113
     - icon: linkedin
       text: LinkedIn
-      href: https://linkedin.com/in/[Shuhei113]
+      href: https://www.linkedin.com/in/Shuhei113
 listing:
+  id: portfolio-listing   # ★ここ重要：名前をつける
   contents: 
-    - report.qmd
+    - marketing_mid.qmd   # ★作成したファイル名に合わせる
     - survival_factor_analysis/report.qmd 
   type: grid
   sort: "date desc"
@@ -27,5 +28,5 @@ Passionate about bridging advanced statistics and business strategy.
 
 ## Selected Projects
 
-::: {#listing}
+::: {#portfolio-listing}
 :::
