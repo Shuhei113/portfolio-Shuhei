@@ -3,8 +3,8 @@
 ## Overview
 This repository contains the **Final Report for the Marketing Science course**, completed during my third year at Hitotsubashi University. The project demonstrates advanced statistical modeling using R.
 
-* **View the Full Report (Web):** [👉 **Click Here to Open Report**](https://shuhei113.github.io/portfolio-Shuhei/survival_factor_analysis/report.html)
-* **Source Code:** [View R/Quarto Code](./analysis.qmd)
+* **View the Full Report (Web):** [👉 **Click Here to Open Report**](./report.html)
+* **Source Code:** [View R/Quarto Code](./report.qmd)
 * **Original Submission:** [Download PDF (Japanese)](./original_report.pdf?raw=true)
 
 ---
