@@ -3,20 +3,22 @@ project:
   output-dir: docs
 
 website:
-  title: "Shuhei's Portfolio" # 左上に表示される名前
+  title: "Shuhei's Portfolio"
   navbar:
     left:
       - href: index.qmd
         text: Home
-      - href: projects.qmd
-        text: Projects
-      - href: cv.pdf # もしCVがあれば
-        text: CV
+      # プロジェクトページを別途作るまでは、HomeだけでOKです
+      # - href: projects.qmd
+      #   text: Projects
+      # cv.pdf を置いたら以下の#を外してください
+      # - href: cv.pdf
+      #   text: CV
     right:
       - icon: github
-        href: https://github.com/[あなたのアカウント名]
+        href: https://github.com/Shuhei113
       - icon: linkedin
-        href: https://linkedin.com/in/[あなたのアカウント名]
+        href: https://www.linkedin.com/in/Shuhei113
 
 format:
   html:
