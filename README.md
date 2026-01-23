@@ -1,15 +1,8 @@
-# Shuhei Kuwabara research projects 
+# research projects 
 
-Welcome! I'm Shuhei Kuwabara, an undergraduate student in Social Data Science at Hitotsubashi University in Tokyo, Japan.  My academic interests lie in Bayesian statistics and its applications to marketing science and consumer behavior.
-
-This page showcases selected coursework and independent projects I have worked on so far.
+ここ導入
 
 ##  Selected Projects
 
--  [Business Strategy Report – Suzuki Motor Corporation](./business_strategy_suzuki)
--  [GDP Regression Analysis (Multivariate)](./regression_analysis)
--  [Loyalty Program Effects on Spending](./loyalty_program_report)
--  [Online Retail Database Project (SQL Schema & Queries)](./database_report)
-- [Data Visualisation Projects (Individual and Group)](./data_visualisation)
 - [Marketing Science](./survival_factor_analysis/index.md)
 
