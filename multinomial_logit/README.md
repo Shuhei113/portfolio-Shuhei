@@ -1,3 +1,13 @@
+---
+title: "Consumer Choice Modeling"      # ← カードのタイトルになります
+description: "Using Latent Class Analysis to optimize pricing strategy." # ← カードの説明文
+date: "2025-11-13"                     # ← 日付（並び替え用）
+categories: [R, Marketing, LCA]        # ← タグ
+image: "images/graph.png"              # ← カードの画像（フォルダ内に画像があれば指定）
+format: html                           # ← Webページとして表示するために必要
+---
+
+
 # Consumer Choice Modeling & Market Segmentation
 ## Application of Latent Class Analysis on Yoghurt Brand Choice
 
