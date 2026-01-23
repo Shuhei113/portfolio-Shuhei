@@ -28,17 +28,17 @@ This analysis was originally conducted as a mid-term project for the **Marketing
 * **Modeling:** `mlogit`, `flexmix`
 * **Reporting:** Quarto (Reproducible Reporting)
 
-### 📂 Repository Structure
+### 📂 Repository Structure (Click to View)
 | File | Description |
 | :--- | :--- |
-| `marketing_mid.html` | **[Recommended]** The full analysis report rendered in HTML. View this for the complete narrative and visualizations. |
-| `marketing_mid.qmd` | The Quarto source code. Contains all R code for data loading, cleaning, and modeling to ensure reproducibility. |
-| `original.pdf` | The original project report submitted in Japanese (Mid-term assignment). |
-| `data/` | Directory containing the raw dataset (`chapter_06_choice.csv`). |
+| **[marketing_mid.html](./marketing_mid.html)** | 📊 **[Recommended]** The full analysis report rendered in HTML. View this for the complete narrative and visualizations. |
+| **[marketing_mid.qmd](./marketing_mid.qmd)** | 📝 The Quarto source code. Contains all R code for data loading, cleaning, and modeling to ensure reproducibility. |
+| **[original.pdf](./original.pdf)** | 🇯🇵 The original project report submitted in Japanese (Mid-term assignment). |
+| **[data/](./data/)** | 📁 Directory containing the raw dataset (`chapter_06_choice.csv`). |
 
 ### 🚀 How to Reproduce
 1.  Clone this repository.
-2.  Open `marketing_mid.qmd` in RStudio.
+2.  Open `[marketing_mid.qmd](./marketing_mid.qmd)` in RStudio.
 3.  Ensure the required packages are installed:
     ```r
     install.packages(c("tidyverse", "mlogit", "flexmix", "quarto"))
