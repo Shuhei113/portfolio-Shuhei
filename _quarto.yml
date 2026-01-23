@@ -1,0 +1,25 @@
+project:
+  type: website
+  output-dir: docs
+
+website:
+  title: "Shuhei's Portfolio" # 左上に表示される名前
+  navbar:
+    left:
+      - href: index.qmd
+        text: Home
+      - href: projects.qmd
+        text: Projects
+      - href: cv.pdf # もしCVがあれば
+        text: CV
+    right:
+      - icon: github
+        href: https://github.com/[あなたのアカウント名]
+      - icon: linkedin
+        href: https://linkedin.com/in/[あなたのアカウント名]
+
+format:
+  html:
+    theme: cosmo
+    css: styles.css
+    toc: true
