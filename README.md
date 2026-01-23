@@ -4,5 +4,6 @@
 
 ##  Selected Projects
 
-- [Marketing Science](./survival_factor_analysis/index.md)
+- [Marketing Science Final](./survival_factor_analysis/index.md)
+- [Marketing Science Mid](.//README.md)
 
